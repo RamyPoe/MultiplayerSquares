@@ -123,11 +123,13 @@ def retrieveInfo():
     return info[0], info[1]
 
 def parseData(data):
-        print(data)
-        data = data.split(':')
-        data = data[-1].split(',')
-        return data[0], data[1]
-
+    print(data)
+    if data:
+        touching = data.split(':')[1].split('.')[-1]
+        data = data.split(':')[1].split('.')[0].split(',')
+        return data[0], data[1], touching
+    else:
+        return player1.x, player1.y, '0'
 
 def send_posData():
     data = str(network.id) + ':' + str(player0.x) + ',' + str(player0.y)
@@ -147,21 +149,16 @@ def itTime(msg):
 
 loaded = True
 
-def slapSfx():
-    global loaded
-    if loaded:
-        pygame.mixer.music.play()
-        start = time.time(); start = int(start)
-        if 3-(int(time.time())-start) == 0:
-            pygame.mixer.music.stop()
-
 def drawBackground():
     screen.fill((255, 255, 255))
 
 #Start Pygame-----------------------------------------------------------------------------
 pygame.init()
 
-screen = pygame.display.set_mode((600, 400))
+monitor_size = [pygame.display.Info().current_w, pygame.display.Info().current_h]
+
+finalScreen = pygame.display.set_mode((640, 360))
+screen = pygame.Surface((640, 360))
 icon = pygame.image.load('dependencies/icon.png')
 pygame.display.set_icon(icon)
 pygame.display.set_caption('MultiPlayer Tag!')
@@ -173,17 +170,17 @@ ip, port = retrieveInfo()
 network = Network(ip, port)
 
 try:
-    taggedSfx = pygame.mixer.music.load("dependencies/slap.mp3")
+    taggedSfx = pygame.mixer.music.load("dependencies/song.wav")
 except:
     loaded = False
 
 if network.id == '0':
     player0 = player(0, 0)
-    player1 = player(550, 350)
+    player1 = player(pygame.display.Info().current_w-50, pygame.display.Info().current_h-50)
     player0.it = False
     player1.it = True
 elif network.id == '1':
-    player0 = player(550, 350)
+    player0 = player(pygame.display.Info().current_w-50, pygame.display.Info().current_h-50)
     player1 = player(0, 0)
     player0.it = True
     player1.it = False
@@ -199,13 +196,17 @@ def queue():
     font = pygame.font.SysFont('arial', 50) #creates a font
     waiting = font.render("Waiting for another player...", False, (255, 255, 255)) #renders the font with the fps
     screen.fill((100, 100, 100))
-    screen.blit(waiting, (300-int(waiting.get_width()/2), 200-int(waiting.get_height()/2))) #blit the surface onto the screen
-
+    screen.blit(waiting, (320-int(waiting.get_width()/2), 180-int(waiting.get_height()/2))) #blit the surface onto the screen
+    finalScreen.blit(screen, (0, 0))
     pygame.display.update()
 
     network.wait()
 queue()
+
+if loaded:
+    pygame.mixer.music.play(-1)
 #Main Loop--------------------------------------------------------------------
+fullscreen = False
 goMain = True
 while goMain:
     for event in pygame.event.get():
@@ -215,30 +216,35 @@ while goMain:
     #Local Movement------------------------------------------------------
     keys = pygame.key.get_pressed()
 
+    if keys[pygame.K_F11]:
+        fullscreen = not fullscreen
+        if fullscreen:
+            finalScreen = pygame.display.set_mode((monitor_size), pygame.FULLSCREEN)
+        else:
+            finalScreen = pygame.display.set_mode((640, 360))
     if keys[pygame.K_LEFT] and player0.x > 0:
         player0.move(0)
-    if keys[pygame.K_RIGHT] and player0.x < 600-player0.width:
+    if keys[pygame.K_RIGHT] and player0.x < pygame.display.Info().current_w-player0.width:
         player0.move(1)
     if keys[pygame.K_UP] and player0.y > 0:
         player0.move(2)
-    if keys[pygame.K_DOWN] and player0.y < 400-player0.height:
+    if keys[pygame.K_DOWN] and player0.y < pygame.display.Info().current_h-player0.height:
         player0.move(3)
 
     #send pos to server and update other player's pos-----------
-    x2, y2 = parseData(send_posData())
+    x2, y2, colliding = parseData(send_posData())
     x2 = int(x2); y2 = int(y2)
     player1.x, player1.y = x2, y2
 
     #Check for collisions--------------------------------------------------
-    if player0.rect.colliderect(player1.rect) == 0:
+    if colliding == '0':
         touching = False
         if startTimer:
             progress = 10-(int(time.time())-start_time)
 
-    elif player0.rect.colliderect(player1.rect) and touching == False:
+    elif colliding == '1' and touching == False:
         touching = True
         startTimer = True
-        slapSfx()
         start_time = time.time()
         start_time = int(start_time)
 
@@ -260,32 +266,32 @@ while goMain:
     
     #Check For Winner----------------------------------------------------------
     if progress == 0:
+        font = pygame.font.SysFont('arial', 40, 1) #creates a font
         if player0.it == False:
-            font = pygame.font.SysFont('arial', 40, 1) #creates a font
-            fpsSurf = font.render("YOU WIN!!!", False, (255, 255, 255), (100, 100, 100)) #renders the font with the fps
-            screen.fill((100, 100, 100))
-            screen.blit(fpsSurf, (0, 0)) #blit the surface onto the screen
+            Surf = font.render("YOU WIN!!!", False, (255, 255, 255), (100, 100, 100)) #renders the font with the fps
 
-            startTimer = False
-            progress = 10
         elif player0.it == True:
-            font = pygame.font.SysFont('arial', 40, 1) #creates a font
-            fpsSurf = font.render("YOU LOSE!!!", False, (255, 255, 255), (100, 100, 100)) #renders the font with the fps
-            screen.fill((100, 100, 100))
-            screen.blit(fpsSurf, (0, 0)) #blit the surface onto the screen
+            Surf = font.render("YOU LOSE!!!", False, (255, 255, 255), (100, 100, 100)) #renders the font with the fps
 
-            startTimer = False
-            progress = 10
+        screen.fill((100, 100, 100))
+        screen.blit(Surf, (640/2-Surf.get_width()/2, 360/2-Surf.get_height()/2)) #blit the surface onto the screen
 
+        startTimer = False
+        progress = 10
+            
+        if fullscreen:
+            pygame.transform.scale(screen, (monitor_size), finalScreen)
+        else:
+            finalScreen.blit(screen, (0, 0))
         pygame.display.update()
 
         if network.id == '0':
             player0 = player(0, 0)
-            player1 = player(550, 350)
+            player1 = player(640-50, 360-50)
             player0.it = False
             player1.it = True
         elif network.id == '1':
-            player0 = player(550, 350)
+            player0 = player(640-50, 360-50)
             player1 = player(0, 0)
             player0.it = True
             player1.it = False
@@ -293,6 +299,10 @@ while goMain:
 
     clock.tick(60)
     pygame.display.update()
+    if fullscreen:
+        pygame.transform.scale(screen, (monitor_size), finalScreen)
+    else:
+        finalScreen.blit(screen, (0, 0))
 
 pygame.quit()
 network.disconnect()
