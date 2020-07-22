@@ -10,4 +10,8 @@ Once a client has disconnected, server must be restarted
 
 A simple game of tag, where the red square is 'it' and must tag the blue sqaure in under 10 seconds, or else the opponent takes victory
 
+Controls:
+Arrow keys to move
+F11 to fullscreen
+
 Have Fun!
