@@ -163,6 +163,14 @@ icon = pygame.image.load('dependencies/icon.png')
 pygame.display.set_icon(icon)
 pygame.display.set_caption('MultiPlayer Tag!')
 clock = pygame.time.Clock()
+#Start Screen-----------------------------------------------------------------------------
+
+font = pygame.font.SysFont('arial', 50) #creates a font
+waiting = font.render("Enter Server Info...", False, (255, 255, 255)) #renders the font with the fps
+screen.fill((100, 100, 100))
+screen.blit(waiting, (320-int(waiting.get_width()/2), 180-int(waiting.get_height()/2))) #blit the surface onto the screen
+finalScreen.blit(screen, (0, 0))
+pygame.display.update()
 
 #Creating things-----------------------------------------------------------------------------
 goInfo()
@@ -201,6 +209,7 @@ def queue():
     pygame.display.update()
 
     network.wait()
+
 queue()
 
 if loaded:
@@ -224,11 +233,11 @@ while goMain:
             finalScreen = pygame.display.set_mode((640, 360))
     if keys[pygame.K_LEFT] and player0.x > 0:
         player0.move(0)
-    if keys[pygame.K_RIGHT] and player0.x < pygame.display.Info().current_w-player0.width:
+    if keys[pygame.K_RIGHT] and player0.x < 640-player0.width:
         player0.move(1)
     if keys[pygame.K_UP] and player0.y > 0:
         player0.move(2)
-    if keys[pygame.K_DOWN] and player0.y < pygame.display.Info().current_h-player0.height:
+    if keys[pygame.K_DOWN] and player0.y < 360-player0.height:
         player0.move(3)
 
     #send pos to server and update other player's pos-----------
